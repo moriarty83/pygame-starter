@@ -148,13 +148,16 @@ def build_ground_col():
     topper = random.choice(list(toppings.keys()))
     firstRow = False if len(rows) > 0 else True
     if firstRow == False:
-        if height == 15:
+        height = rows[-1]["height"]
+        if height > 14:
+            print("hit height max")
             topper = random.choice(list(down_flat_tiles.keys()))
         if height < 4:
+            print("hit height min")
             topper = random.choice(list(up_flat_tiles.keys()))
-        height = rows[-1]["height"]
 
-        proceed = True if random.randint(0, 10) > 3 else False
+        proceed = True if random.randint(
+            0, 10) > 3 and height < 15 and height > 3 else False
         gentleSlope = True if firstRow == False and rows[-1]["topper"] == "up_gentle_start" or firstRow == False and rows[-1]["topper"] == "down_gentle_start" else False
         if rows[-1]["topper"] == "up_gentle_start":
             print("hit 1")
@@ -220,6 +223,7 @@ def build_ground_col():
                         "topper is upsteep, up gentle, topper is: {}", topper)
         print("previous topper is " + rows[-1]["topper"] + " previous height is " +
               str(rows[-1]["height"]) + " current topper is " + topper)
+
     surface = pygame.Surface((32, height*32))
     for i in range(height):
         if i != 0:
