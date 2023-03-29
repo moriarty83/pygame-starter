@@ -4,8 +4,11 @@ import os
 import sys
 import math
 import random
+import time
 
 pygame.init()
+
+makingRow = False
 
 screen = pygame.display.set_mode((1280, 720))
 ground = pygame.display.set_mode((1280, 720))
@@ -50,8 +53,8 @@ up_flat_tiles = {
 
 down_flat_tiles = {
     "flat": [32, 0],
-    "down_steep": [224, 0],
-    "down_gentle_start": [192, 64],
+    "down_steep": [192, 0],
+    "down_gentle_start": [128, 64],
 }
 
 clock = pygame.time.Clock()
@@ -136,56 +139,87 @@ def generate_new_col(forward=True):
 
 
 def build_ground_col():
+
+    global makingRow
+    makingRow = True
+
     toppings = dict(list(tiles.items())[:5])
     height = 8
     topper = random.choice(list(toppings.keys()))
     firstRow = False if len(rows) > 0 else True
     if firstRow == False:
+        if height == 15:
+            topper = random.choice(list(down_flat_tiles.keys()))
+        if height < 4:
+            topper = random.choice(list(up_flat_tiles.keys()))
         height = rows[-1]["height"]
 
         proceed = True if random.randint(0, 10) > 3 else False
         gentleSlope = True if firstRow == False and rows[-1]["topper"] == "up_gentle_start" or firstRow == False and rows[-1]["topper"] == "down_gentle_start" else False
-        print("proceed: ", proceed)
-        if proceed == True or gentleSlope == True:
+        if rows[-1]["topper"] == "up_gentle_start":
+            print("hit 1")
+            topper = "up_gentle_continue"
+        elif rows[-1]["topper"] == "down_gentle_start":
+            print("hit 2")
+            topper = "down_gentle_continue"
+
+        elif proceed == True or gentleSlope == True:
+            print("hit 3")
+
             if rows[-1]["topper"] == "up_steep":
+                print("hit 4")
                 topper = "up_steep"
                 height += 1
             elif rows[-1]["topper"] == "down_steep":
+                print("hit 5")
                 topper = "down_steep"
                 height -= 1
-            if rows[-1]["topper"] == "up_gentle_start":
-                topper = "up_gentle_continue"
-            elif rows[-1]["topper"] == "down_gentle_start":
-                topper = "down_gentle_continue"
+
             elif rows[-1]["topper"] == "up_gentle_continue":
+                print("hit 6")
                 height += 1
                 topper = "up_gentle_start"
             elif rows[-1]["topper"] == "down_gentle_continue":
+                print("hit 7")
                 height -= 1
                 topper = "down_gentle_start"
             else:
+                print("hit 8")
                 topper = rows[-1]["topper"]
             if height < 3:
+                print("hit 9")
                 topper = "flat"
                 height = 3
             if height > 15:
+                print("hit 10")
                 topper = "flat"
                 height = 15
 
         elif proceed == False and firstRow == False:
             print("proceed false, topper is: ", topper)
             if rows[-1]["topper"] == "flat":
+                print("hit 11")
                 if topper == "up_steep" or topper == "up_gentle_start":
+                    print("hit 12")
                     height += 1
             elif rows[-1]["topper"] == "up_steep" or rows[-1]["topper"] == "up_gentle_continue":
+                print("hit 13")
                 if topper == "up_steep" or topper == "up_gentle_start":
+                    print("hit 14")
                     height += 1
             elif rows[-1]["topper"] == "down_steep" or rows[-1]["topper"] == "down_gentle_continue":
-                if topper != "up_steep" or topper != "up_gentle_start":
+                print("hit 15")
+                if topper != "up_steep" and topper != "up_gentle_start":
+                    print("hit 16")
+                    print("topper is NOT upsteep, up gentle, topper is: {}",
+                          topper)
                     height -= 1
                 else:
-                    print("topper is upsteep, up gentle or flat")
-
+                    print("hit 17")
+                    print(
+                        "topper is upsteep, up gentle, topper is: {}", topper)
+        print("previous topper is " + rows[-1]["topper"] + " previous height is " +
+              str(rows[-1]["height"]) + " current topper is " + topper)
     surface = pygame.Surface((32, height*32))
     for i in range(height):
         if i != 0:
@@ -195,6 +229,7 @@ def build_ground_col():
         tile = get_ground_tile(ground_tiles_image, type)
         surface.blit(tile, (0, i*32))
     col = {"surface": surface, "height": height, "topper": topper}
+
     return col
 
 
@@ -213,6 +248,11 @@ while running:
         if event.type == pygame.QUIT:
             running = False
     keys = pygame.key.get_pressed()
+    if keys[pygame.K_j]:
+        if makingRow != True:
+            rows.append(build_ground_col())
+
+    makingRow = False
     if keys[pygame.K_w]:
         player_pos.y -= 300 * dt
 
