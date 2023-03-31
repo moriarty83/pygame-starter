@@ -1,17 +1,14 @@
 import pygame
 from pygame.locals import *
 
-import moderngl
-import numpy as np
-
 import os
-import sys
 import math
 from generate_ground import *
+from player import *
 
 
 pygame.init()
-
+all_sprites = pygame.sprite.Group()
 
 screen = pygame.display.set_mode((1280, 720))
 ground = pygame.display.set_mode((1280, 720))
@@ -21,9 +18,6 @@ scroll_x_speed = 0
 scroll_y_speed = 0
 
 scroll_height = -1000
-player_altitude = 1000
-player_rotation_current = 0
-player_rotation_new = 0
 
 
 # BACKGROUND
@@ -61,43 +55,11 @@ dt = 0
 first_load = True
 
 # CREATE PLAYER
-player_pos = pygame.Vector2(screen.get_width() / 2, screen.get_height() / 2)
-
-player_sprites = [pygame.image.load(os.path.join(
-    'assets/spritesheets', 'lander_03_00.png')).convert_alpha(), pygame.image.load(os.path.join(
-        'assets/spritesheets', 'lander_03_15.png')).convert_alpha(), pygame.image.load(os.path.join(
-            'assets/spritesheets', 'lander_03_30.png')).convert_alpha(), pygame.image.load(os.path.join(
-                'assets/spritesheets', 'lander_03_45.png')).convert_alpha(), pygame.image.load(os.path.join(
-                    'assets/spritesheets', 'lander_03_60.png')).convert_alpha(), pygame.image.load(os.path.join(
-                        'assets/spritesheets', 'lander_03_75.png')).convert_alpha(), pygame.image.load(os.path.join(
-                            'assets/spritesheets', 'lander_03_90.png')).convert_alpha(), pygame.image.load(os.path.join(
-                                'assets/spritesheets', 'lander_03_105.png')).convert_alpha(), pygame.image.load(os.path.join(
-                                    'assets/spritesheets', 'lander_03_120.png')).convert_alpha(), pygame.image.load(os.path.join(
-                                        'assets/spritesheets', 'lander_03_135.png')).convert_alpha(), pygame.image.load(os.path.join(
-                                            'assets/spritesheets', 'lander_03_150.png')).convert_alpha(), pygame.image.load(os.path.join(
-                                                'assets/spritesheets', 'lander_03_165.png')).convert_alpha(), pygame.image.load(os.path.join(
-                                                    'assets/spritesheets', 'lander_03_180.png')).convert_alpha(), pygame.image.load(os.path.join(
-                                                        'assets/spritesheets', 'lander_03_195.png')).convert_alpha(), pygame.image.load(os.path.join(
-                                                            'assets/spritesheets', 'lander_03_210.png')).convert_alpha(), pygame.image.load(os.path.join(
-                                                                'assets/spritesheets', 'lander_03_225.png')).convert_alpha(), pygame.image.load(os.path.join(
-                                                                    'assets/spritesheets', 'lander_03_240.png')).convert_alpha(), pygame.image.load(os.path.join(
-                                                                        'assets/spritesheets', 'lander_03_255.png')).convert_alpha(), pygame.image.load(os.path.join(
-                                                                            'assets/spritesheets', 'lander_03_270.png')).convert_alpha(), pygame.image.load(os.path.join(
-                                                                                'assets/spritesheets', 'lander_03_285.png')).convert_alpha(), pygame.image.load(os.path.join(
-                                                                                    'assets/spritesheets', 'lander_03_300.png')).convert_alpha(), pygame.image.load(os.path.join(
-                                                                                        'assets/spritesheets', 'lander_03_315.png')).convert_alpha(), pygame.image.load(os.path.join(
-                                                                                            'assets/spritesheets', 'lander_03_330.png')).convert_alpha(), pygame.image.load(os.path.join(
-                                                                                                'assets/spritesheets', 'lander_03_345.png')).convert_alpha()]
-
-for sprite in player_sprites:
-    sprite = pygame.transform.scale_by(sprite, 2)
-    sprite.set_colorkey("black")
+player = Player(screen)
 
 
 def redrawWindow():
-    global player_sprites
-    global player_rotation_current
-    global player_rotation_new
+
     # draws our first background_01 image
     screen.blit(background_01, (background_01X, background_01Y))
     screen.blit(background_01, (background_01X2, background_01Y))
@@ -109,19 +71,22 @@ def redrawWindow():
     # # draws the seconf background_02 image
     # screen.blit(background_02, (background_02X2, background_02Y2))
     for i in range(len(rows)):
+
         screen.blit(
-            rows[i]['surface'], (i*32+groundX, screen.get_height()-rows[i]['surface'].get_height()+(23*32)+(scroll_height*-1)))
+            rows[i].surface, (i*32+groundX, screen.get_height()-rows[i].surface.get_height()+(23*32)+(scroll_height*-1)))
+        rows[i].rect = (i*32+groundX, screen.get_height() -
+                        rows[i].surface.get_height()+(23*32)+(scroll_height*-1), 32, 32)
+        pygame.draw.rect(screen, "blue", (rows[i].rect), width=3)
 
-    active_player_sprite = math.floor(player_rotation_current % 360 / 15)
+    screen.blit(player.active_sprite, (player.position))
+    pygame.draw.rect(screen, "red", (player.rect), width=3)
 
-    screen.blit(player_sprites[active_player_sprite], (player_pos))
     pygame.display.update()  # updates the screen
 
 # screen.get_height()-rows[i]['surface'].get_height()
 
 
 def updateBackground():
-    global player_rotation
 
     global background_01X
     global background_01X2
@@ -186,24 +151,20 @@ def updateBackground():
             background_02Y2 = -background_02.get_height()
 
 
-def calculate_thrust():
-
-    global player_rotation_current
-    radians = player_rotation_current * math.pi/180
-    return pygame.Vector2(math.sin(radians),
-                          -math.cos(radians))
-
-
 while running:
     redrawWindow()
     updateBackground()
 
     if first_load:
         for i in range(math.ceil(screen.get_width()/32)):
-            rows.append(build_ground_col(rows))
+            new_row = GroundColSprite(rows)
+            rows.append(new_row)
+            ground_sprites.add(new_row)
         first_load = False
     if len(rows) * 32 < screen.get_width()-32 + groundX*-1:
-        rows.append(build_ground_col(rows))
+        new_row = GroundColSprite(rows)
+        rows.append(new_row)
+        ground_sprites.add(new_row)
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -211,35 +172,27 @@ while running:
     keys = pygame.key.get_pressed()
 
     if keys[pygame.K_w]:
-        thrust = calculate_thrust()
+        thrust = player.calculate_thrust()
         scroll_y_speed += 3 * dt * thrust.y
         scroll_x_speed += 3 * dt * thrust.x
 
     if keys[pygame.K_s]:
-        thrust = calculate_thrust()
+        thrust = player.calculate_thrust()
         scroll_y_speed -= 3 * dt * thrust.y
         scroll_x_speed -= 3 * dt * thrust.x
     if keys[pygame.K_a]:
-        if player_rotation_current == -345 or player_rotation_current == 345:
-            player_rotation_current = 0
-        else:
-            player_rotation_current -= 15
+        player.rotate(-15)
 
     if keys[pygame.K_d]:
-        if player_rotation_current == -345 or player_rotation_current == 345:
-            player_rotation_current = 0
-        else:
-            player_rotation_current += 15
+        player.rotate(15)
 
     scroll_height += scroll_y_speed
-    player_altitude -= scroll_y_speed
     scroll_y_speed += 1 * dt * gravity
-    print(player_rotation_current)
-
-    print(scroll_x_speed)
-    print(scroll_y_speed)
 
     pygame.display.update()
+
+    collision = pygame.sprite.spritecollideany(player, ground_sprites)
+    print(rows[0].rect)
 
     dt = clock.tick(60) / 1000
 
