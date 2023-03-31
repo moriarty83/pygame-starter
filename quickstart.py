@@ -17,8 +17,8 @@ screen = pygame.display.set_mode((1280, 720))
 ground = pygame.display.set_mode((1280, 720))
 pygame.display.set_caption("Lander")
 
-scroll_x_speed = 2.4
-scroll_y_speed = 2.4
+scroll_x_speed = 0
+scroll_y_speed = 0
 
 scroll_height = -1000
 player_altitude = 1000
@@ -51,6 +51,7 @@ ground_tiles_image = pygame.image.load(os.path.join(
     'assets/spritesheets', 'groundtiles_grayscale.png')).convert_alpha()
 groundX = 0
 groundX_02 = screen.get_width()
+gravity = 1
 
 
 clock = pygame.time.Clock()
@@ -61,6 +62,7 @@ first_load = True
 
 # CREATE PLAYER
 player_pos = pygame.Vector2(screen.get_width() / 2, screen.get_height() / 2)
+
 player_sprites = [pygame.image.load(os.path.join(
     'assets/spritesheets', 'lander_03_00.png')).convert_alpha(), pygame.image.load(os.path.join(
         'assets/spritesheets', 'lander_03_15.png')).convert_alpha(), pygame.image.load(os.path.join(
@@ -108,7 +110,7 @@ def redrawWindow():
     # screen.blit(background_02, (background_02X2, background_02Y2))
     for i in range(len(rows)):
         screen.blit(
-            rows[i]['surface'], (i*32+groundX, screen.get_height()-rows[i]['surface'].get_height()+(scroll_height*-1)))
+            rows[i]['surface'], (i*32+groundX, screen.get_height()-rows[i]['surface'].get_height()+(23*32)+(scroll_height*-1)))
 
     active_player_sprite = math.floor(player_rotation_current % 360 / 15)
 
@@ -184,6 +186,14 @@ def updateBackground():
             background_02Y2 = -background_02.get_height()
 
 
+def calculate_thrust():
+
+    global player_rotation_current
+    radians = player_rotation_current * math.pi/180
+    return pygame.Vector2(math.sin(radians),
+                          -math.cos(radians))
+
+
 while running:
     redrawWindow()
     updateBackground()
@@ -201,25 +211,35 @@ while running:
     keys = pygame.key.get_pressed()
 
     if keys[pygame.K_w]:
-        scroll_y_speed -= 1 * dt
+        thrust = calculate_thrust()
+        scroll_y_speed += 3 * dt * thrust.y
+        scroll_x_speed += 3 * dt * thrust.x
 
     if keys[pygame.K_s]:
-        scroll_y_speed += 1 * dt
+        thrust = calculate_thrust()
+        scroll_y_speed -= 3 * dt * thrust.y
+        scroll_x_speed -= 3 * dt * thrust.x
     if keys[pygame.K_a]:
-        player_rotation_current -= 15
+        if player_rotation_current == -345 or player_rotation_current == 345:
+            player_rotation_current = 0
+        else:
+            player_rotation_current -= 15
 
     if keys[pygame.K_d]:
-        player_rotation_current += 15
+        if player_rotation_current == -345 or player_rotation_current == 345:
+            player_rotation_current = 0
+        else:
+            player_rotation_current += 15
 
-    if (scroll_height >= 0):
-        scroll_height = 0
-        scroll_y_speed = 0 if scroll_y_speed >= 0 else scroll_y_speed
     scroll_height += scroll_y_speed
     player_altitude -= scroll_y_speed
+    scroll_y_speed += 1 * dt * gravity
+    print(player_rotation_current)
+
+    print(scroll_x_speed)
+    print(scroll_y_speed)
 
     pygame.display.update()
-    print("pr_current:", player_rotation_current)
-    print("pr_new:", player_rotation_new)
 
     dt = clock.tick(60) / 1000
 

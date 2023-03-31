@@ -109,8 +109,8 @@ def build_ground_col(rows):
 
                     height -= 1
 
-    surface = pygame.Surface((32, height*32))
-    for i in range(height, -1, -1):
+    surface = pygame.Surface((32, (height+23)*32))
+    for i in range(height+23, -1, -1):
         if i != 0:
             type = "inside"
         else:
