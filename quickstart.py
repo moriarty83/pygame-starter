@@ -76,7 +76,6 @@ def redrawWindow():
             rows[i].surface, (i*32+groundX, screen.get_height()-rows[i].surface.get_height()+(23*32)+(scroll_height*-1)))
         rows[i].rect = (i*32+groundX, screen.get_height() -
                         rows[i].surface.get_height()+(23*32)+(scroll_height*-1), 32, 32)
-        pygame.draw.rect(screen, "blue", (rows[i].rect), width=3)
 
     screen.blit(player.active_sprite, (player.position))
     pygame.draw.rect(screen, "red", (player.rect), width=3)
@@ -157,12 +156,12 @@ while running:
 
     if first_load:
         for i in range(math.ceil(screen.get_width()/32)):
-            new_row = GroundColSprite(rows)
+            new_row = GroundColSprite(rows, screen)
             rows.append(new_row)
             ground_sprites.add(new_row)
         first_load = False
     if len(rows) * 32 < screen.get_width()-32 + groundX*-1:
-        new_row = GroundColSprite(rows)
+        new_row = GroundColSprite(rows, screen)
         rows.append(new_row)
         ground_sprites.add(new_row)
 
@@ -191,8 +190,11 @@ while running:
 
     pygame.display.update()
 
-    collision = pygame.sprite.spritecollideany(player, ground_sprites)
-    print(rows[0].rect)
+    for sprite in ground_sprites:
+        collision = pygame.sprite.collide_mask(player, sprite)
+
+        if collision != None:
+            scroll_y_speed = 0
 
     dt = clock.tick(60) / 1000
 

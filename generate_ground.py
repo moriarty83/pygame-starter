@@ -52,15 +52,19 @@ class GroundSprite(pygame.sprite.Sprite):
         self.image.blit(self.sheet, (0, 0), (tiles[self.type][0], tiles[self.type]
                                              [1], tiles[self.type][0]+32, tiles[self.type][1]+32))
         self.rect = self.image.get_rect()
+        self.mask = pygame.mask.from_surface(self.image)
 
 
 class GroundColSprite(pygame.sprite.Sprite):
     def __init__(self, *args):
         super().__init__()
         self.rows = args[0]
+        self.screen = args[1]
         self.height = 8
         self.topper = random.choice(list(toppings.keys()))
+        self.sheet = ground_tiles_image
         self.first_row = False if len(self.rows) > 0 else True
+
         if self.first_row == False:
             self.height = self.rows[-1].height
             if self.height > 14:
@@ -113,12 +117,21 @@ class GroundColSprite(pygame.sprite.Sprite):
 
                         self.height -= 1
         self.surface = pygame.Surface((32, (self.height+23)*32))
+        self.surface = self.surface.convert_alpha()
+
+        self.surface.set_colorkey("black")
         for i in range(self.height+23, -1, -1):
             if i != 0:
                 type = "inside"
+                self.surface.blit(self.sheet, (0, i*32), (tiles[type][0], tiles[type]
+                                                          [1], tiles[type][0]+32, tiles[type][1]+32))
             else:
+                print("i = 0")
                 type = self.topper
-            tile = GroundSprite(ground_tiles_image, type)
-            ground_sprites.add([tile])
-            self.surface.blit(tile.image, (0, i*32))
+                self.surface.blit(self.sheet, (0, i*32), (tiles[type][0], tiles[type]
+                                                          [1], tiles[type][0]+32, tiles[type][1]+32))
+        self.mask = pygame.mask.from_surface(self.surface)
+        olist = self.mask.outline()
+        pygame.draw.polygon(self.surface, "yellow", olist, 3)
+
         self.rect = self.surface.get_rect()

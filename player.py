@@ -45,8 +45,11 @@ class Player(pygame.sprite.Sprite):
             self.screen.get_width() / 2, self.screen.get_height() / 2)
         self.sprite_index = math.floor(self.current_rotation % 360 / 15)
         self.active_sprite = player_sprites[self.sprite_index]
-        self.rect = pygame.Rect(self.screen.get_width() / 2 - 32,
-                                self.screen.get_height() / 2 - 32, 64, 64)
+        self.rect = pygame.Rect(self.screen.get_width() / 2,
+                                self.screen.get_height() / 2, 64, 64)
+        self.mask = pygame.mask.from_surface(self.active_sprite)
+        olist = self.mask.outline()
+        pygame.draw.polygon(self.active_sprite, "yellow", olist, 3)
 
     def calculate_thrust(self):
         radians = self.current_rotation * math.pi/180
@@ -63,4 +66,3 @@ class Player(pygame.sprite.Sprite):
     def update_sprite(self):
         self.sprite_index = math.floor(self.current_rotation % 360 / 15)
         self.active_sprite = player_sprites[self.sprite_index]
-        self.rect = self.active_sprite.get_rect()
